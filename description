@@ -1,0 +1,15 @@
+# 💰 Expense Tracker
+
+A simple and user-friendly Expense Tracker application to manage daily expenses and keep track of income vs spending.
+
+
+## ✨ Features
+- Add and delete expenses
+- Categorize income and spending
+- View balance in real-time
+- Responsive design for mobile and desktop
+
+## 🚀 How to Run
+1. Clone the repo:
+   ```bash
+   git clone https://github.com/your-username/expense-tracker.git
