@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker - Manage Your Finances</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .expense-form {
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chart-container {
+            max-width: 100%;
+            height: 300px;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <header class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-bold">Expense Tracker</h1>
+                <div class="flex space-x-4">
+                    <button id="addExpenseBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition">Add Expense</button>
+                    <button id="viewDashboardBtn" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition">Dashboard</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- Expense Form -->
+        <div id="expenseForm" class="bg-white rounded-lg shadow-md p-6 mb-8 expense-form hidden">
+            <h2 class="text-2xl font-semibold mb-4">Add New Expense</h2>
+            <form id="addExpenseForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Amount</label>
+                        <input type="number" id="expenseAmount" step="0.01" min="0" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Category</label>
+                        <select id="expenseCategory" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select Category</option>
+                            <option value="Food">Food & Dining</option>
+                            <option value="Transport">Transportation</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Date</label>
+                        <input type="date" id="expenseDate" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Description</label>
+                        <input type="text" id="expenseDescription" placeholder="e.g., Dinner at restaurant" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                <button type="submit" class="mt-6 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition">Save Expense</button>
+                <button type="button" id="cancelBtn" class="mt-6 ml-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition">Cancel</button>
+            </form>
+        </div>
+
+        <!-- Expense List and Search -->
+        <div id="expenseList" class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Your Expenses</h2>
+            <div class="mb-4 flex flex-col md:flex-row gap-4">
+                <input type="text" id="searchInput" placeholder="Search expenses..." class="flex-grow px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                <select id="filterCategory" class="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Categories</option>
+                    <option value="Food">Food & Dining</option>
+                    <option value="Transport">Transportation</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Utilities">Utilities</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Other">Other</option>
+                </select>
+                <input type="month" id="filterMonth" class="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="overflow-x-auto">
+                <table id="expensesTable" class="w-full table-auto border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="px-4 py-2 text-left">Date</th>
+                            <th class="px-4 py-2 text-left">Description</th>
+                            <th class="px-4 py-2 text-left">Category</th>
+                            <th class="px-4 py-2 text-right">Amount</th>
+                            <th class="px-4 py-2 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesBody">
+                        <!-- Expenses will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="bg-white rounded-lg shadow-md p-6 hidden">
+            <h2 class="text-2xl font-semibold mb-4">Spending Analytics</h2>
+            <div class="grid md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold">Total Expenses</h3>
+                    <p id="totalAmount" class="text-2xl font-bold text-blue-600">$0.00</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold">Monthly Average</h3>
+                    <p id="avgMonthly" class="text-2xl font-bold text-green-600">$0.00</p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold">Top Category</h3>
+                    <p id="topCategory" class="text-2xl font-bold text-purple-600">None</p>
+                </div>
+            </div>
+            <div class="chart-container mb-6">
+                <canvas id="spendingChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Hero Image -->
+        <div class="mt-8 text-center">
+            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/69c50abb-03d6-4a29-9cf1-3f51e8a38ada.png" alt="Financial dashboard displaying colorful charts of expense tracking with icons for money, graphs, and budget planning in a modern minimalist design with blue and green themes" class="w-full rounded-lg shadow-md" onerror="this.style.display='none';">
+        </div>
+    </main>
+
+    <script>
+        // DOM Elements
+        const addExpenseBtn = document.getElementById('addExpenseBtn');
+        const viewDashboardBtn = document.getElementById('viewDashboardBtn');
+        const expenseForm = document.getElementById('expenseForm');
+        const addExpenseForm = document.getElementById('addExpenseForm');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const expenseList = document.getElementById('expenseList');
+        const dashboard = document.getElementById('dashboard');
+        const expensesTable = document.getElementById('expensesTable');
+        const expensesBody = document.getElementById('expensesBody');
+        const searchInput = document.getElementById('searchInput');
+        const filterCategory = document.getElementById('filterCategory');
+        const filterMonth = document.getElementById('filterMonth');
+        const totalAmountEl = document.getElementById('totalAmount');
+        const avgMonthlyEl = document.getElementById('avgMonthly');
+        const topCategoryEl = document.getElementById('topCategory');
+
+        // Data Storage Key
+        const STORAGE_KEY = 'expenseTrackerExpenses';
+
+        // Get Expenses from LocalStorage
+        function getExpenses() {
+            const expenses = localStorage.getItem(STORAGE_KEY);
+            return expenses ? JSON.parse(expenses) : [];
+        }
+
+        // Save Expenses to LocalStorage
+        function saveExpenses(expenses) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+        }
+
+        // Add Expense
+        addExpenseForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const expenses = getExpenses();
+            const newExpense = {
+                id: Date.now(),
+                amount: parseFloat(document.getElementById('expenseAmount').value),
+                category: document.getElementById('expenseCategory').value,
+                date: document.getElementById('expenseDate').value,
+                description: document.getElementById('expenseDescription').value || 'No description'
+            };
+            expenses.push(newExpense);
+            saveExpenses(expenses);
+            addExpenseForm.reset();
+            expenseForm.classList.add('hidden');
+            renderExpenses(expenses);
+            updateDashboard(expenses);
+        });
+
+        // Render Expenses
+        function renderExpenses(expenses = getExpenses(), search = '', category = '', month = '') {
+            expensesBody.innerHTML = '';
+            const filteredExpenses = expenses.filter(expense => {
+                const matchesSearch = expense.description.toLowerCase().includes(search.toLowerCase()) || 
+                                      expense.category.toLowerCase().includes(search.toLowerCase());
+                const matchesCategory = !category || expense.category === category;
+                const matchesMonth = !month || expense.date.startsWith(month);
+                return matchesSearch && matchesCategory && matchesMonth;
+            });
+
+            filteredExpenses.forEach(expense => {
+                const row = `
+                    <tr class="border-b">
+                        <td class="px-4 py-2">${expense.date}</td>
+                        <td class="px-4 py-2">${expense.description}</td>
+                        <td class="px-4 py-2">${expense.category}</td>
+                        <td class="px-4 py-2 text-right">$${expense.amount.toFixed(2)}</td>
+                        <td class="px-4 py-2 text-center">
+                            <button onclick="deleteExpense(${expense.id})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                expensesBody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        // Delete Expense
+        function deleteExpense(id) {
+            const expenses = getExpenses().filter(exp => exp.id !== id);
+            saveExpenses(expenses);
+            renderExpenses(expenses);
+            updateDashboard(expenses);
+        }
+
+        // Update Dashboard
+        function updateDashboard(expenses = getExpenses()) {
+            const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+            totalAmountEl.textContent = `$${total.toFixed(2)}`;
+
+            const months = {};
+            expenses.forEach(exp => {
+                const month = exp.date.substring(0, 7);
+                months[month] = (months[month] || 0) + exp.amount;
+            });
+            const monthTotals = Object.values(months);
+            const avg = monthTotals.length > 0 ? monthTotals.reduce((a, b) => a + b, 0) / monthTotals.length : 0;
+            avgMonthlyEl.textContent = `$${avg.toFixed(2)}`;
+
+            const categoryTotals = {};
+            expenses.forEach(exp => {
+                categoryTotals[exp.category] = (categoryTotals[exp.category] || 0) + exp.amount;
+            });
+            const topCategory = Object.keys(categoryTotals).reduce((a, b) => 
+                categoryTotals[a] > categoryTotals[b] ? a : b, 'None');
+            topCategoryEl.textContent = topCategory;
+
+            // Category Chart
+            const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+            const categoryLabels = Object.keys(categoryTotals);
+            const categoryData = Object.values(categoryTotals);
+            new Chart(ctxCategory, {
+                type: 'doughnut',
+                data: {
+                    labels: categoryLabels,
+                    datasets: [{
+                        data: categoryData,
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#B0BEC5']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // Monthly Chart
+            const ctxSpending = document.getElementById('spendingChart').getContext('2d');
+            const monthlyLabels = Object.keys(months);
+            const monthlyData = Object.values(months);
+            new Chart(ctxSpending, {
+                type: 'line',
+                data: {
+                    labels: monthlyLabels,
+                    datasets: [{
+                        label: 'Monthly Spending',
+                        data: monthlyData,
+                        borderColor: '#36A2EB',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Event Listeners
+        addExpenseBtn.addEventListener('click', () => {
+            expenseForm.classList.remove('hidden');
+            dashboard.classList.add('hidden');
+            expenseList.classList.remove('hidden');
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            expenseForm.classList.add('hidden');
+        });
+
+        viewDashboardBtn.addEventListener('click', () => {
+            expenseList.classList.add('hidden');
+            dashboard.classList.remove('hidden');
+            updateDashboard();
+        });
+
+        searchInput.addEventListener('input', () => {
+            renderExpenses(getExpenses(), searchInput.value, filterCategory.value, filterMonth.value);
+        });
+
+        filterCategory.addEventListener('change', () => {
+            renderExpenses(getExpenses(), searchInput.value, filterCategory.value, filterMonth.value);
+        });
+
+        filterMonth.addEventListener('change', () => {
+            renderExpenses(getExpenses(), searchInput.value, filterCategory.value, filterMonth.value);
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderExpenses();
+        });
+    </script>
+</body>
+</html>
+</content>
+</create_file>
