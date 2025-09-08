@@ -24,4 +24,4 @@ CSS3 – Styling & responsiveness
 JavaScript (ES6) – Functionality
 
 
-link: expensetrack.html
+expensetrack.html
