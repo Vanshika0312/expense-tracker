@@ -22,6 +22,3 @@ HTML5 – Structure
 CSS3 – Styling & responsiveness
 
 JavaScript (ES6) – Functionality
-
-
-link[C:\Users\Vanshika\OneDrive\Desktop\B.Tech\Webd\expensetrack.html]
